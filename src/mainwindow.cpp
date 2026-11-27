@@ -25,6 +25,8 @@
 #include "findbar.h"
 #include "macwindow.h"
 #include "markdowneditor.h"
+#include "settingswindow.h"
+#include "shortcuts.h"
 
 namespace {
 
@@ -137,20 +139,20 @@ void MainWindow::buildMenus() {
     // screen, and each key belongs to its menu item alone: Qt finds a key
     // claimed twice ambiguous and runs neither.
     QMenu *file = menuBar()->addMenu(tr("File"));
-    addCommand(file, tr("New Window"), QKeySequence(QStringLiteral("Ctrl+N")),
+    addCommand(file, tr("New Window"), QStringLiteral("New Window"),
                [this]() { m_backend->newWindow(); });
-    addCommand(file, tr("Open…"), QKeySequence(QStringLiteral("Ctrl+O")),
+    addCommand(file, tr("Open…"), QStringLiteral("Open…"),
                [this]() { m_backend->openDialog(); });
     file->addSeparator();
-    addCommand(file, tr("Save"), QKeySequence(QStringLiteral("Ctrl+S")),
+    addCommand(file, tr("Save"), QStringLiteral("Save"),
                [this]() { m_backend->save(); });
-    addCommand(file, tr("Save As…"), QKeySequence(QStringLiteral("Ctrl+Shift+S")),
+    addCommand(file, tr("Save As…"), QStringLiteral("Save As…"),
                [this]() { m_backend->saveAsDialog(); });
     file->addSeparator();
-    addCommand(file, tr("Print…"), QKeySequence(QStringLiteral("Ctrl+P")),
+    addCommand(file, tr("Print…"), QStringLiteral("Print…"),
                [this]() { m_backend->printDocument(); });
     file->addSeparator();
-    addCommand(file, tr("Close Window"), QKeySequence(QStringLiteral("Ctrl+W")),
+    addCommand(file, tr("Close Window"), QStringLiteral("Close Window"),
                [this]() { close(); });
 
     QMenu *edit = menuBar()->addMenu(tr("Edit"));
@@ -162,43 +164,42 @@ void MainWindow::buildMenus() {
                 command(m_editor);
         };
     };
-    addCommand(edit, tr("Undo"), QKeySequence(QStringLiteral("Ctrl+Z")),
+    addCommand(edit, tr("Undo"), QStringLiteral("Undo"),
                onTarget([](auto *target) { target->undo(); }));
-    QAction *redo = addCommand(edit, tr("Redo"), QKeySequence(QStringLiteral("Ctrl+Shift+Z")),
+    QAction *redo = addCommand(edit, tr("Redo"), QStringLiteral("Redo"),
                                onTarget([](auto *target) { target->redo(); }));
     edit->addSeparator();
-    addCommand(edit, tr("Cut"), QKeySequence(QStringLiteral("Ctrl+X")),
+    addCommand(edit, tr("Cut"), QStringLiteral("Cut"),
                onTarget([](auto *target) { target->cut(); }));
-    addCommand(edit, tr("Copy"), QKeySequence(QStringLiteral("Ctrl+C")),
+    addCommand(edit, tr("Copy"), QStringLiteral("Copy"),
                onTarget([](auto *target) { target->copy(); }));
-    addCommand(edit, tr("Paste"), QKeySequence(QStringLiteral("Ctrl+V")),
+    addCommand(edit, tr("Paste"), QStringLiteral("Paste"),
                onTarget([](auto *target) { target->paste(); }));
-    addCommand(edit, tr("Select All"), QKeySequence(QStringLiteral("Ctrl+A")),
+    addCommand(edit, tr("Select All"), QStringLiteral("Select All"),
                onTarget([](auto *target) { target->selectAll(); }));
-    addCommand(edit, tr("Copy as HTML"), QKeySequence(QStringLiteral("Ctrl+Shift+C")),
+    addCommand(edit, tr("Copy as HTML"), QStringLiteral("Copy as HTML"),
                [this]() { m_backend->copyAsHtml(); });
     edit->addSeparator();
-    addCommand(edit, tr("Find"), QKeySequence(QStringLiteral("Ctrl+F")),
+    addCommand(edit, tr("Find"), QStringLiteral("Find"),
                [this]() { m_findBar->open(false); });
-    // Cmd+H belongs to macOS, which hides the app with it.
-    addCommand(edit, tr("Find and Replace"), QKeySequence(QStringLiteral("Ctrl+Alt+F")),
+    addCommand(edit, tr("Find and Replace"), QStringLiteral("Find and Replace"),
                [this]() { m_findBar->open(true); });
     edit->addSeparator();
-    addCommand(edit, tr("Bold"), QKeySequence(QStringLiteral("Ctrl+B")),
+    addCommand(edit, tr("Bold"), QStringLiteral("Bold"),
                [this]() { m_editor->toggleWrap(QStringLiteral("**")); });
-    addCommand(edit, tr("Italic"), QKeySequence(QStringLiteral("Ctrl+I")),
+    addCommand(edit, tr("Italic"), QStringLiteral("Italic"),
                [this]() { m_editor->toggleWrap(QStringLiteral("*")); });
-    addCommand(edit, tr("Strikethrough"), QKeySequence(QStringLiteral("Ctrl+Shift+X")),
+    addCommand(edit, tr("Strikethrough"), QStringLiteral("Strikethrough"),
                [this]() { m_editor->toggleWrap(QStringLiteral("~~")); });
-    addCommand(edit, tr("Link"), QKeySequence(QStringLiteral("Ctrl+K")),
+    addCommand(edit, tr("Link"), QStringLiteral("Link"),
                [this]() { m_editor->insertLink(); });
 
     QMenu *view = menuBar()->addMenu(tr("View"));
-    QAction *bigger = addCommand(view, tr("Bigger"), QKeySequence(QStringLiteral("Ctrl+=")),
+    QAction *bigger = addCommand(view, tr("Bigger"), QStringLiteral("Bigger"),
                                  [this]() { m_backend->increaseTextSize(); });
-    addCommand(view, tr("Smaller"), QKeySequence(QStringLiteral("Ctrl+-")),
+    addCommand(view, tr("Smaller"), QStringLiteral("Smaller"),
                [this]() { m_backend->decreaseTextSize(); });
-    addCommand(view, tr("Actual Size"), QKeySequence(QStringLiteral("Ctrl+0")),
+    addCommand(view, tr("Actual Size"), QStringLiteral("Actual Size"),
                [this]() { m_backend->resetTextSize(); });
     // The font is a family only: the size is Bigger and Smaller's, and bold
     // and italic are the Markdown's.
@@ -206,7 +207,7 @@ void MainWindow::buildMenus() {
     fonts->menuAction()->setMenuRole(QAction::NoRole);
     m_fontChoice = new QActionGroup(fonts);
     for (const QString &name : Backend::editorFonts()) {
-        QAction *item = addCommand(fonts, name, QKeySequence(),
+        QAction *item = addCommand(fonts, name, QString(),
                                    [this, name]() { m_backend->setEditorFont(name); });
         item->setCheckable(true);
         m_fontChoice->addAction(item);
@@ -214,9 +215,8 @@ void MainWindow::buildMenus() {
     tickFont();
     connect(m_backend, &Backend::editorFontChanged, this, &MainWindow::tickFont);
     view->addSeparator();
-    // Cmd+Ctrl+F, as Qt spells Cmd as Ctrl and the Control key as Meta.
     m_fullScreen = addCommand(view, tr("Enter Full Screen"),
-                              QKeySequence(QStringLiteral("Ctrl+Meta+F")), [this]() {
+                              QStringLiteral("Enter Full Screen"), [this]() {
                                   if (isFullScreen())
                                       showNormal();
                                   else
@@ -224,9 +224,9 @@ void MainWindow::buildMenus() {
                               });
 
     QMenu *window = menuBar()->addMenu(tr("Window"));
-    addCommand(window, tr("Minimize"), QKeySequence(QStringLiteral("Ctrl+M")),
+    addCommand(window, tr("Minimize"), QStringLiteral("Minimize"),
                [this]() { showMinimized(); }, false);
-    addCommand(window, tr("Zoom"), QKeySequence(), [this]() {
+    addCommand(window, tr("Zoom"), QStringLiteral("Zoom"), [this]() {
         if (isMaximized())
             showNormal();
         else
@@ -234,22 +234,46 @@ void MainWindow::buildMenus() {
     }, false);
 
     // Ctrl++ is a different key to Qt, not a shifted Ctrl+=, and it is the
-    // only one a layout that puts + on its own key can reach.
-    connect(new QShortcut(QKeySequence(QStringLiteral("Ctrl++")), this), &QShortcut::activated,
-            bigger, &QAction::trigger);
-    connect(new QShortcut(QKeySequence(QStringLiteral("Ctrl+Y")), this), &QShortcut::activated,
-            redo, &QAction::trigger);
-    connect(new QShortcut(QKeySequence(QStringLiteral("Ctrl+G")), this), &QShortcut::activated,
-            this, [this]() {
-                if (m_findBar->isOpen())
-                    m_findBar->step(1);
-            });
+    // only one a layout that puts + on its own key can reach. Each extra key
+    // stands down once its command's key changed or a command took it.
+    const auto addExtraKey = [this](const char *keys, const QString &command,
+                                    const std::function<void()> &run) {
+      auto *shortcut = new QShortcut(QKeySequence(QString::fromLatin1(keys)), this);
+      connect(shortcut, &QShortcut::activated, this, run);
+      const auto update = [shortcut, command]() {
+        const Shortcuts &shortcuts = Shortcuts::shared();
+        shortcut->setEnabled(shortcuts.commandFor(shortcut->key()).isEmpty()
+                             && (command.isEmpty()
+                                 || shortcuts.keys(command) == Shortcuts::defaultKeys(command)));
+      };
+      connect(&Shortcuts::shared(), &Shortcuts::changed, shortcut, update);
+      update();
+    };
+    addExtraKey("Ctrl++", QStringLiteral("Bigger"), [bigger]() { bigger->trigger(); });
+    addExtraKey("Ctrl+Y", QStringLiteral("Redo"), [redo]() { redo->trigger(); });
+    addExtraKey("Ctrl+G", QString(), [this]() {
+      if (m_findBar->isOpen())
+        m_findBar->step(1);
+    });
+
+    // ApplicationSpecificRole puts the item in the application menu under
+    // its own words; PreferencesRole would show Qt's "Preferences...".
+    QAction *settings = file->addAction(tr("Settings…"));
+    settings->setShortcut(QKeySequence::Preferences);
+    settings->setMenuRole(QAction::ApplicationSpecificRole);
+    connect(settings, &QAction::triggered, this, []() { SettingsWindow::present(); });
 }
 
-QAction *MainWindow::addCommand(QMenu *menu, const QString &text, const QKeySequence &keys,
+QAction *MainWindow::addCommand(QMenu *menu, const QString &text, const QString &command,
                                 const std::function<void()> &run, bool held) {
     QAction *action = menu->addAction(text);
-    action->setShortcut(keys);
+    if (!command.isEmpty()) {
+      const auto updateKeys = [action, command]() {
+        action->setShortcut(Shortcuts::shared().keys(command));
+      };
+      connect(&Shortcuts::shared(), &Shortcuts::changed, action, updateKeys);
+      updateKeys();
+    }
     // macOS moves an item to the application menu by its words alone, and
     // takes one starting with "Exit" for Quit.
     action->setMenuRole(QAction::NoRole);

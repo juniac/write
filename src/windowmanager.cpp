@@ -12,6 +12,8 @@
 
 #include "backend.h"
 #include "mainwindow.h"
+#include "settingswindow.h"
+#include "shortcuts.h"
 
 // How far each new window steps down and to the right of the front one, as
 // macOS cascades document windows.
@@ -63,17 +65,28 @@ void WindowManager::buildNoWindowMenuBar() {
     QMenu *file = m_noWindowMenuBar->addMenu(tr("File"));
 
     QAction *newWindow = file->addAction(tr("New Window"));
-    newWindow->setShortcut(QKeySequence(QStringLiteral("Ctrl+N")));
     connect(newWindow, &QAction::triggered, this, [this]() { this->newWindow(); });
 
     QAction *open = file->addAction(tr("Open…"));
-    open->setShortcut(QKeySequence(QStringLiteral("Ctrl+O")));
     connect(open, &QAction::triggered, this, [this]() {
         const QUrl url = QFileDialog::getOpenFileUrl(
             nullptr, tr("Open File"), QUrl(), Backend::documentFilters().join(QStringLiteral(";;")));
         if (url.isValid())
             openFile(url);
     });
+
+    const auto updateKeys = [newWindow, open]() {
+      newWindow->setShortcut(Shortcuts::shared().keys(QStringLiteral("New Window")));
+      open->setShortcut(Shortcuts::shared().keys(QStringLiteral("Open…")));
+    };
+    connect(&Shortcuts::shared(), &Shortcuts::changed, file, updateKeys);
+    updateKeys();
+
+    // Shown in the application menu, as MainWindow's is.
+    QAction *settings = file->addAction(tr("Settings…"));
+    settings->setShortcut(QKeySequence::Preferences);
+    settings->setMenuRole(QAction::ApplicationSpecificRole);
+    connect(settings, &QAction::triggered, this, []() { SettingsWindow::present(); });
 
     const auto enableWithNoWindow = [this, file]() {
         const bool noWindow = windows().isEmpty();

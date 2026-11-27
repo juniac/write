@@ -55,7 +55,9 @@ protected:
 
 private:
     void buildMenus();
-    QAction *addCommand(QMenu *menu, const QString &text, const QKeySequence &keys,
+    // `command` names the key in Shortcuts; an empty one leaves the item
+    // without a key.
+    QAction *addCommand(QMenu *menu, const QString &text, const QString &command,
                         const std::function<void()> &run, bool held = true);
     // The field the writer is typing in: the find or replace field, or the
     // text, as the Edit menu works on anywhere on the Mac.

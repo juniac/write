@@ -25,6 +25,8 @@ HEADERS += \
     src/markdownedits.h \
     src/markdownhighlighter.h \
     src/plaintextlayout.h \
+    src/settingswindow.h \
+    src/shortcuts.h \
     src/systemtheme.h \
     src/translator.h \
     src/windowmanager.h
@@ -40,6 +42,8 @@ SOURCES += \
     src/markdownedits.cpp \
     src/markdownhighlighter.cpp \
     src/plaintextlayout.cpp \
+    src/settingswindow.cpp \
+    src/shortcuts.cpp \
     src/systemtheme.cpp \
     src/translator.cpp \
     src/windowmanager.cpp
